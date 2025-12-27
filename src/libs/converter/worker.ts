@@ -9,6 +9,9 @@ import ConverterManager from ".";
 const manager = new ConverterManager(globalThis);
 
 const convert = async (name: string, data: ArrayBuffer) => {
+  console.debug(
+    `received convert request for ${name} (${data.byteLength} bytes)`,
+  );
   ImageMagick.readCollection(new Uint8Array(data), (col) => {
     col[0].clone((img) => {
       col.push(img);
@@ -36,19 +39,19 @@ const convert = async (name: string, data: ArrayBuffer) => {
 const prepareEvents = () => {
   console.debug("preparing events");
   manager.on("convert", ({ name, data }) => convert(name, data));
+
+  manager.emit("ready", {});
 };
 
 // init magick
 const init = async () => {
   console.debug("initializing magick");
-  manager.emit("status", { ready: false, message: "Loading magick..." });
 
   initializeImageMagick(
     await fetch(magickWasmPath).then((r) => r.arrayBuffer()),
   )
     .then(() => {
       console.debug("initializing done!");
-      manager.emit("status", { ready: true, message: null });
       prepareEvents();
     })
     .catch((e) =>
@@ -59,4 +62,4 @@ const init = async () => {
     );
 };
 
-init();
+manager.once("init", () => init());

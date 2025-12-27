@@ -1,10 +1,9 @@
 import MessageHandler from "../msgs";
 
 export type MsgEventMap = {
+  init: object;
+  ready: object;
   error: { context: string; error: string };
-  status:
-    | { ready: true; message: null }
-    | { ready: false; message: string | null };
   convert: { name: string; data: ArrayBuffer };
   convertResult: { name: string } & (
     | { success: false; error: string }

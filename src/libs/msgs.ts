@@ -10,7 +10,7 @@ export default class MessageHandler<
     ][];
   } = {};
 
-  constructor(private ctx: Worker | typeof globalThis) {
+  constructor(public ctx: Worker | typeof globalThis) {
     (ctx as Worker).addEventListener("message", this.handleMessage.bind(this));
   }
 

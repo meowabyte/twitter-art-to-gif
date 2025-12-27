@@ -1,29 +1,35 @@
 <script lang="ts">
     import "@/styles/main.css";
-    import { onMount } from "svelte";
     import TwitterLogo from "@/img/twitter_logo.svg?component";
     import Upload from "@/components/upload.svelte";
     import Loader from "@/components/loader.svelte";
     import Results from "@/components/results.svelte";
-    import ConverterManager from "@/libs/converter";
-    import ConversionWorker from "@/libs/converter/worker?worker";
 
-    let loadingStatus: string | null = $state("Loading...");
+    let loadingStatus: string | null = $state(null);
     let processedFiles: Record<string, string> = $state({});
 
-    let toProcess: string[] = [];
-    const updateProcessingStatus = () => {
-        if (toProcess.length === 0) return (loadingStatus = null);
+    let toProcess: string[] = $state([]);
+    $effect(() => {
+        if (toProcess.length === 0) {
+            loadingStatus = null;
+            return;
+        }
         loadingStatus = `Converting ${toProcess.slice(0, 2).join(", ")}${toProcess.length > 2 ? ` (...and ${toProcess.length - 2} more)` : ""}`;
-    };
+    });
 
-    let convert: ConverterManager;
-    onMount(async () => {
+    let convert!: (typeof import("@/libs/converter"))["default"]["prototype"];
+    let magickInit = false;
+    const initMagick = async () => {
+        if (magickInit) return;
+        loadingStatus = "Loading magick...";
+
+        const [{ default: ConverterManager }, { default: ConversionWorker }] =
+            await Promise.all([
+                import("@/libs/converter"),
+                import("@/libs/converter/worker?worker"),
+            ]);
+
         convert = new ConverterManager(new ConversionWorker());
-
-        convert.on("status", ({ message, ready }) => {
-            loadingStatus = ready ? null : (message ?? "Loading...");
-        });
 
         convert.on("error", (msg) => {
             alert(
@@ -34,7 +40,6 @@
 
         convert.on("convertResult", (msg) => {
             toProcess = toProcess.filter((n) => n !== msg.name);
-            updateProcessingStatus();
 
             if (!msg.success) {
                 alert(
@@ -46,9 +51,20 @@
 
             processedFiles[msg.name] = msg.data;
         });
-    });
+
+        convert.emit("init", {});
+        await new Promise<void>((r) =>
+            convert.once("ready", () => {
+                magickInit = true;
+                loadingStatus = null;
+                r();
+            }),
+        );
+    };
 
     const processFiles = async (files: File[]) => {
+        await initMagick();
+
         Object.values(processedFiles).forEach((url) =>
             URL.revokeObjectURL(url),
         );
@@ -56,9 +72,7 @@
 
         for (const file of files) {
             const baseName = file.name.replace(/\.[^.]*$/, "");
-
             toProcess.push(baseName);
-            updateProcessingStatus();
 
             convert.emit("convert", {
                 name: baseName,
