@@ -1,9 +1,9 @@
 <script lang="ts">
-    import "@/styles/main.css";
     import TwitterLogo from "@/img/twitter_logo.svg?component";
     import Upload from "@/components/upload.svelte";
     import Loader from "@/components/loader.svelte";
     import Results from "@/components/results.svelte";
+    import TwitterIntent from "@/components/twitter-intent.svelte";
 
     let loadingStatus: string | null = $state(null);
     let processedFiles: Record<string, string> = $state({});
@@ -70,7 +70,7 @@
         );
         processedFiles = {};
 
-        for (const file of files) {
+        for (const file of files.toSorted((a, b) => a.size - b.size)) {
             const baseName = file.name.replace(/\.[^.]*$/, "");
             toProcess.push(baseName);
 
@@ -84,7 +84,7 @@
 
 <main>
     <header>
-        <TwitterLogo width="80" />
+        <TwitterLogo class="logo" width="80" />
         <h1>ArtToGIF for Twitter</h1>
         <span
             >Quickly convert your image or art to GIF to prevent AI tools being
@@ -97,5 +97,52 @@
     {/if}
     <footer>
         <span>created by <a href="https://meowa.site">meowabyte</a></span>
+        <span>all media is processed LOCALLY and is NOT SENT ANYWHERE</span>
+        <span class="interaction-links">
+            <TwitterIntent
+                mode="tweet"
+                text="Hi! I'm using this tool for protecting my images from being used by AI! Try it out!"
+                url="https://meowabyte.github.io/twitter-art-to-gif/"
+                hashtags={["antiai", "art", "tools"]}
+                related={["meowabyte"]}>Share on Twitter</TwitterIntent
+            >
+            <TwitterIntent mode="like" tweetId="2004248400578203834"
+                >Like the tool announcement!</TwitterIntent
+            >
+        </span>
     </footer>
 </main>
+
+<style>
+    main {
+        position: absolute;
+        left: 50vw;
+        top: 50vh;
+        translate: -50% -50%;
+        width: 90%;
+        max-width: 500px;
+
+        display: flex;
+        flex-direction: column;
+        place-items: center;
+        text-align: center;
+        gap: 50px;
+    }
+
+    :global(.logo) {
+        margin-bottom: 20px;
+    }
+
+    footer {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .interaction-links {
+        display: inline;
+        margin-top: 20px;
+        > :global(*:not(:last-child)) {
+            margin-right: 20px;
+        }
+    }
+</style>

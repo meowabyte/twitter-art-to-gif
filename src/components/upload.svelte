@@ -11,6 +11,7 @@
         hidden
         type="file"
         accept="image/*"
+        multiple
         bind:this={inputEl}
         onchange={(ev) => {
             if (!ev.currentTarget.files) return;

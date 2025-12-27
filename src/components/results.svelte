@@ -41,5 +41,8 @@
     td {
         border: 2px dotted;
         padding: 10px;
+        min-width: 100px;
+        max-width: 300px;
+        word-break: break-all;
     }
 </style>
